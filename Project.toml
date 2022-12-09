@@ -1,0 +1,10 @@
+name = "Remix"
+uuid = "84bd138c-e40c-46cb-900a-3e4c76080fd2"
+authors = ["Andrei Zhabinski <andrei.zhabinski@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+Umlaut = "92992a2b-8ce5-4a9c-bb9d-58be9a7dc841"
+
+[compat]
+Umlaut = "0.4.8"

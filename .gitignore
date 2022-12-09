@@ -1,0 +1,11 @@
+*~
+_*
+\#*
+\.#*
+.juliahistory
+Manifest.toml
+benchmark/*.json
+benchmark/Manifest.toml
+.vscode/
+
+*.bson
