@@ -4,7 +4,6 @@ authors = ["Andrei Zhabinski <andrei.zhabinski@gmail.com>"]
 version = "0.1.0"
 
 [deps]
-FiniteDifferences = "26cc04aa-876d-5657-8c51-4c34ba976000"
 Umlaut = "92992a2b-8ce5-4a9c-bb9d-58be9a7dc841"
 
 [compat]
