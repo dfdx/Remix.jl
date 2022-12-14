@@ -1,6 +1,8 @@
 using Umlaut
 import Umlaut: V, Call, Tracer, trace!, inputs!, inputs
 
+import FiniteDifferences as FD
+
 
 func(x, y) = sin(x) * y
 
@@ -36,7 +38,11 @@ end
 
 
 vjp_fwd(::typeof(*), x::Number, y::Number) = x * y, (x, y)
-vjp_bwd(::typeof(*), res, g) = (g * res[2], g * res[1])
+vjp_bwd(::typeof(*), res::Tuple{<:Number, <:Number}, g) = (g * res[2], g * res[1])
+
+vjp_fwd(::typeof(*), x::AbstractMatrix, y::AbstractMatrix) = x * y, (x, y)
+vjp_bwd(::typeof(*), res, g) = (g * res[2]', res[1]' * g)
+
 
 vjp_fwd(::typeof(+), x::Number, y::Number) = (x + y, ())
 vjp_bwd(::typeof(+), res, g) = (g, g)
@@ -157,14 +163,31 @@ end
 
 
 
+using Test
+
+rand_cotangent(::Real) = randn()
+rand_cotangent(x::AbstractArray) = convert(typeof(x), randn(size(x)...))
+
+
+function test_vjp(f, args...; atol=1e-5, rtol=1e-5)
+    # AD
+    val, res = vjp_fwd(f, args...)
+    dy = rand_cotangent(val)
+    ad_dxs = vjp_bwd(f, res, dy)
+    # FD
+    fdm = FD.central_fdm(5, 1)
+    fd_dxs = FD.j′vp(fdm, f, dy, args...)
+
+    @test all(isapprox.(ad_dxs, fd_dxs))
+end
+
+
 function main()
     f = (x, y) -> (x * y + 1) + x
     args = (2.0, 3.0)
     value_and_grad(f, args...)
+
+
+    f = (*)
+    args = (rand(2, 3), rand(3, 2))
 end
-
-
-# 1. trace function
-# 2. replace f(args...) with subgraph from vjp_fwd(f, args...)
-# 3. add vjp_bwd(res, g), mapping outputs from forward pass
-# 4. utils to test vjps
