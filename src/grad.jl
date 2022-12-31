@@ -75,15 +75,18 @@ end
 function vjp_bwd!(t::Tracer, src::Tape)
     # backward pass
     seed = push!(t.tape, Constant(1))
+    outs = t.tape.c.outs
     derivs = t.tape.c.derivs
     residuals = t.tape.c.residuals
     derivs[V(src.result.id)] = seed
     for src_op in reverse(src.ops)
         if src_op isa Call
+            src_args = Umlaut.map_vars(v -> V(v.id), src_op.args)  # unbind from src
+            trg_args = [get(outs, v, v) for v in src_args]
             src_v = V(src_op.id)
             res = residuals[src_v]
             g = derivs[src_v]
-            dxs_t = trace!(t, (vjp_bwd, src_op.fn, res, g))
+            dxs_t = trace!(t, (vjp_bwd, res, g, src_op.fn, trg_args...))
             @assert dxs_t.op.val isa Tuple
             for (x, dx) in zip(src_op.args, dxs_t.op.args)
                 if x isa V

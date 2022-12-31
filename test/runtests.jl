@@ -11,12 +11,12 @@ function test_vjp(f, args...; atol=1e-5, rtol=1e-5)
     # AD
     val, res = vjp_fwd(f, args...)
     dy = rand_cotangent(val)
-    ad_dxs = vjp_bwd(f, res, dy)
+    ad_dxs = vjp_bwd(res, dy, f, args...)
     # FD
     fdm = FD.central_fdm(5, 1)
     fd_dxs = FD.j′vp(fdm, f, dy, args...)
 
-    @test all(isapprox.(ad_dxs, fd_dxs))
+    @test all(isapprox.(ad_dxs, fd_dxs; atol=atol, rtol=rtol))
 end
 
 
