@@ -9,8 +9,13 @@ vjp_fwd(::typeof(+), x::Number, y::Number) = (x + y, ())
 vjp_bwd(res, g, ::typeof(+), x::Number, y::Number) = (g, g)
 
 # TODO: rewrite to consist only of primitives
-_unsum(x, dy, dims) = broadcast(last∘tuple, x, dy)
-_unsum(x, dy, ::Colon) = broadcast(last∘tuple, x, Ref(dy))
+# _unsum(x, dy, dims) = broadcast(last∘tuple, x, dy)
+# _unsum(x, dy, ::Colon) = broadcast(last∘tuple, x, Ref(dy))
+
+
+function _unsum(x, dy, dims)
+#     sz = @constexpr [size(x, d) for d in dims]
+end
 
 
 vjp_fwd(::typeof(sum), x::AbstractArray; dims=:) = sum(x, dims=dims), (x,)

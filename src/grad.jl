@@ -1,30 +1,4 @@
 ###############################################################################
-#                                  Context                                    #
-###############################################################################
-
-
-struct RemixCtx
-    # in the mappings below keys are unboud variables in source tape
-    # values are bound variables in target tape
-    outs::Dict{V, V}        # V(src_v.id) => vjp_fwd(...)[1]
-    residuals::Dict{V, V}   # V(src_v.id) => vjp_fwd(...)[2]
-    derivs::Dict{V, V}      # V(src_v.id) => g
-end
-
-RemixCtx() = RemixCtx(Dict(), Dict(), Dict())
-Base.show(io::IO, ctx::RemixCtx) =
-    print(io, "RemixCtx($(length(ctx.outs)) vars, $(length(ctx.derivs)) derivs)")
-
-
-function Umlaut.isprimitive(::RemixCtx, f, args...)
-    @nospecialize
-    F = Core.Typeof(f)
-    Args = Core.Typeof.(args)
-    return Core.Compiler.return_type(vjp_fwd, Tuple{F, Args...}) !== Nothing
-end
-
-
-###############################################################################
 #                                    Grad                                     #
 ###############################################################################
 
