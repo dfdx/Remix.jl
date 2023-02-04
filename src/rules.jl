@@ -1,3 +1,9 @@
+@constcall Core.apply_type(u::UnionAll, T)
+@constcall tuple(x::Integer)
+@constcall NamedTuple(::Tuple{<:Integer})
+@constcall Core.kwfunc(f)
+
+
 vjp_fwd(::typeof(*), x::Number, y::Number) = x * y, ()
 vjp_bwd(res, g, ::typeof(*), x::Number, y::Number) = (g * y, g * x)
 
@@ -18,5 +24,5 @@ function _unsum(x, dy, dims)
 end
 
 
-vjp_fwd(::typeof(sum), x::AbstractArray; dims=:) = sum(x, dims=dims), (x,)
-vjp_bwd(res, g, ::typeof(sum)) = _unsum(x, g, dims)
+vjp_fwd(::typeof(Core.kwfunc(sum)), kw, ::typeof(sum), x::AbstractArray) = sum(x, dims=kw.dims), (x,)
+vjp_bwd(res, g, ::typeof(Core.kwfunc(sum)), kw, ::typeof(sum), x::AbstractArray) = _unsum(x, g, dims)

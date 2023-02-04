@@ -17,6 +17,8 @@ Base.show(io::IO, ctx::RemixCtx) =
 
 function Umlaut.isprimitive(::RemixCtx, f, args...)
     @nospecialize
+    # global ff = f
+    # global aargs = args
     is_base = Umlaut.isprimitive(Umlaut.BaseCtx(), f, args...)
     is_appl = applicable(vjp_fwd, f, args...)
     if is_base && !is_appl
@@ -29,9 +31,19 @@ function Umlaut.isprimitive(::RemixCtx, f, args...)
         ))
     end
     return is_appl
-    # F = Core.Typeof(f)
-    # Args = Core.Typeof.(args)
-    # return Core.Compiler.return_type(vjp_fwd, Tuple{F, Args...}) !== Nothing
+end
+
+
+function Umlaut.record_primitive!(tape::Tape, v_fargs...)
+    line = get(tape.meta, :line, nothing)
+    # fold constants
+    v_fargs = [v isa V && tape[v] isa Constant ? tape[v].val : v for v in v_fargs]
+    if any(v -> v isa V, v_fargs)
+        push!(tape, mkcall(v_fargs...; line=line))
+    else
+        f, args... = v_fargs
+        push!(tape, Constant(f(args...)))
+    end
 end
 
 
@@ -55,38 +67,3 @@ macro constcall(sig)
         end
     end
 end
-
-
-# constexpr(fn) = fn()
-
-# """
-#     @constexpr <expression>
-
-# During tracing, don't analyze the expression but only evaluate and record
-# the result as a Constant operation.
-
-# During normal execution is equivalent to `identity(<expression>)`
-# """
-# macro constexpr(ex)
-#     if Meta.isexpr(ex, :call)
-#         return esc(:(constexpr(() -> $ex)))
-#     else
-#         throw(AssertionError("@constexpr's argument must be a call, but got: $ex"))
-#     end
-# end
-
-# Umlaut.isprimitive(::RemixCtx, ::typeof(constexpr), fn) = true
-
-# function Umlaut.record_primitive!(tape::Tape{RemixCtx}, ::typeof(constexpr), v_fn)
-#     fn = v_fn isa V ? tape[v_fn].val : v_fn
-#     val = fn()
-#     return push!(tape, Constant(val))
-# end
-
-
-
-# ###
-
-# function constexpr_example(x)
-#     return @constexpr size(repeat(x, outer=(2, 2)))
-# end
