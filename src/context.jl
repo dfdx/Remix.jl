@@ -4,10 +4,10 @@
 
 struct RemixCtx
     # in the mappings below keys are unboud variables in source tape
-    # values are bound variables in target tape
-    outs::Dict{V, V}        # V(src_v.id) => vjp_fwd(...)[1]
-    residuals::Dict{V, V}   # V(src_v.id) => vjp_fwd(...)[2]
-    derivs::Dict{V, V}      # V(src_v.id) => g
+    # values are bound variables in target tape or values
+    outs::Dict{V, Any}        # V(src_v.id) => vjp_fwd(...)[1]
+    residuals::Dict{V, Any}   # V(src_v.id) => vjp_fwd(...)[2]
+    derivs::Dict{V, Any}        # V(src_v.id) => g
 end
 
 RemixCtx() = RemixCtx(Dict(), Dict(), Dict())
@@ -45,6 +45,14 @@ function Umlaut.record_primitive!(tape::Tape, v_fargs...)
         push!(tape, Constant(f(args...)))
     end
 end
+
+
+###############################################################################
+#                                    tuple                                    #
+###############################################################################
+
+
+Umlaut.isprimitive(::RemixCtx, ::typeof(tuple), args...) = true
 
 
 ###############################################################################

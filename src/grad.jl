@@ -4,13 +4,13 @@
 
 
 getderiv(tape::Tape, v::Variable) = get(tape.c.derivs, V(v.id), nothing)
-setderiv!(tape::Tape, x::Variable, dx::Variable) = (
-    tape.c.derivs[V(x.id)] = V(tape, dx.id)
+setderiv!(tape::Tape, x::Variable, dx::Any) = (
+    tape.c.derivs[V(x.id)] = dx isa V ? V(tape, dx.id) : dx
 )
 hasderiv(tape::Tape, v::Variable) = getderiv(tape, v) !== nothing
 
 
-function set_or_add_deriv!(tape::Tape, x::Variable, dx::Variable)
+function set_or_add_deriv!(tape::Tape, x::Variable, dx::Any)
     if !hasderiv(tape, x)
         setderiv!(tape, x, dx)
     else
@@ -39,7 +39,7 @@ function vjp_fwd!(t::Tracer, src::Tape)
             outs[src_v] = out
             residuals[src_v] = res
         else
-            trg_v = push!(t.tape, src_op)  # TODO: copy op
+            trg_v = push!(t.tape, copy(src_op))
             outs[src_v] = trg_v
         end
     end
@@ -62,7 +62,16 @@ function vjp_bwd!(t::Tracer, src::Tape)
             g = derivs[src_v]
             dxs_t = trace!(t, (vjp_bwd, res, g, src_op.fn, trg_args...))
             @assert dxs_t.op.val isa Tuple
-            for (x, dx) in zip(src_op.args, dxs_t.op.args)
+            global STATE = t, src, src_op, dxs_t
+            dxs_op = t.tape[dxs_t]
+            dxs = if dxs_op isa Call
+                dxs_op.args
+            elseif dxs_op isa Constant
+                dxs_op.val
+            else
+                throw(AssertionError("Unexpected operation type of derivative: $dxs_op"))
+            end
+            for (x, dx) in zip(src_op.args, dxs)
                 if x isa V
                     set_or_add_deriv!(t.tape, x, dx)
                 end
