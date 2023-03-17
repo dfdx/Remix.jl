@@ -1,19 +1,26 @@
 using Test
 using Remix
 import Remix.Umlaut
+import Remix: tile
 import FiniteDifferences as FD
+
 
 
 rand_cotangent(::Real) = randn()
 rand_cotangent(x::AbstractArray) = convert(typeof(x), randn(size(x)...))
 
 
-function test_vjp(f, args...; atol=1e-5, rtol=1e-5)
+function test_vjp(f, args...; atol=1e-5, rtol=1e-5, ignore=[])
     # AD
     val, res = vjp_fwd(f, args...)
     dy = rand_cotangent(val)
     ad_dxs = vjp_bwd(res, dy, f, args...)
     # FD
+    if ignore
+        ignored = [a for (i, a) in enumerate(args) if in(i, ignore)]
+        not_ignored = [a for (i, a) in enumerate(args) if !in(i, ignore)]
+        f_ = (not_ignored...) -> f(args...)
+    end
     fdm = FD.central_fdm(5, 1)
     fd_dxs = FD.j′vp(fdm, f, dy, args...)
 
@@ -24,6 +31,8 @@ end
 @testset "arraymath" begin
     test_vjp(*, 2.0, 3.0)
     test_vjp(*, rand(2, 3), rand(3, 2))
+    test_vjp(+, 2.0, 3.0)
+    test_vjp(tile, rand(2, 3), (2, 2))
 end
 
 

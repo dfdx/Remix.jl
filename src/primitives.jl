@@ -1,1 +1,1 @@
-tile(A::AbstractArray, reps::Tuple{<:Integer}) = repeat(A, outer=reps)
+tile(A::AbstractArray, reps::NTuple{N, T}) where {T<:Integer, N} = repeat(A, outer=reps)

@@ -95,5 +95,6 @@ function value_and_grad(f, args...)
     tape = grad(src)
     gt = mkcall(tuple, [getderiv(tape, v) for v in inputs(src)[2:end]]...)
     tape.result = push!(tape, gt)
+    tape = remove_unused(tape)
     return val, tape[tape.result].val
 end

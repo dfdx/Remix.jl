@@ -12,7 +12,7 @@ function current_tape!(tape::Tape)
 end
 
 
-mutable struct ShapedArray{T, N} <: AbstractArray{T, N}
+mutable struct ShapedArray{T, N}
     shape::NTuple
     var::Variable
 end
@@ -43,17 +43,18 @@ end
 # @shaped *(x::ShapedArray{T, 2}, y::ShapedArray{T, 2}) where T = ShapedArray()
 
 
-macro shaped(sig, val)
-
-    return quote
-        function $sig()
-            tape = current_tape()
-            val = ShapedArray{T,2}((x.shape[1], y.shape[2]), V(0))
-            v = push!(tape, mkcall(*, x.var, y.var; val=val))
-            val.var = v
-            return val
-        end
+macro shaped(ex)
+    @assert Meta.isexpr(ex, :(=))
+    sig, out_expr = ex.args
+    body = quote
+        tape = current_tape()
+        out = $out_expr
+        v = push!(tape, mkcall(*, x.var, y.var; val=out))
+        out.var = v
+        return out
     end
+
+    return Expr(:function, sig, Expr(:block, body.args...))
 
 end
 
@@ -91,5 +92,5 @@ function main2()
     sig = :(Base.:*(x::ShapedArray{T, 2}, y::ShapedArray{T, 2}) where T)
 
 
-    ex = :(*(x::ShapedArray, y::ShapedArray) = ShapedArray(x.shape[1], y.shape[2]))
+    ex = :(foo(x::ShapedArray, y::ShapedArray) = ShapedArray(x.shape[1], y.shape[2]))
 end
